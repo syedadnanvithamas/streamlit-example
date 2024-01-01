@@ -1,40 +1,59 @@
-import altair as alt
-import numpy as np
-import pandas as pd
+# Example: Fetch data from a remote server using requests"http://216.48.183.9:3030/companies/"
+# app.py
 import streamlit as st
+import requests
+import pandas as pd  
 
-"""
-# Welcome to Streamlit!
+def get_remote_data():
+    try:
+        url = "http://216.48.183.9:3030/companies/"
+        response = requests.get(url)
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+        response.raise_for_status()
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+        data = response.json()
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+        # Edit the data as needed
+        edited_data = process_data(data)
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+        return edited_data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return None
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+def process_data(data):
+    # Example: Add a new column to the data
+    for entry in data:
+        # Check if 'existing_column' exists in the entry before performing the multiplication
+        if 'existing_column' in entry:
+            entry['new_column'] = entry['existing_column'] * 2
+        else:
+            # Handle the case where 'existing_column' is not present
+            entry['new_column'] = None  # or perform any other action based on your requirements
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+    return data
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+def main():
+    st.title("Remote Data Visualization")
+
+    # Fetch and process data
+    remote_data = get_remote_data()
+
+    if remote_data is not None:
+        # Convert the data to a DataFrame for better formatting
+        df = pd.DataFrame(remote_data)
+
+        # Visualize the edited data in a styled DataFrame
+        st.write("Edited data from the remote server:")
+        st.dataframe(df.style.set_properties(**{'text-align': 'center'}).set_table_styles([{
+            'selector': 'th',
+            'props': [('text-align', 'center')]
+        }]))
+
+        # Example: Display a line chart
+        # Note: This assumes 'sl.num:' is a key in your JSON data; adjust accordingly
+        if 'sl.num:' in df.columns:  # Checking for the existence of the column
+            st.line_chart(df['sl.num:'])
+
+if __name__ == "__main__":
+    main()
