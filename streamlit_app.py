@@ -1,12 +1,11 @@
-# Example: Fetch data from a remote server using requests"http://216.48.183.9:3030/companies/"
 # app.py
 import streamlit as st
 import requests
-import pandas as pd  
+import pandas as pd
 
 def get_remote_data():
     try:
-        url = "http://216.48.183.9:3030/companies/"
+        url = "http://0.0.0.0:3030/companies/"
         response = requests.get(url)
 
         response.raise_for_status()
@@ -20,6 +19,18 @@ def get_remote_data():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data: {e}")
         return None
+
+def update_remote_data(updated_data):
+    try:
+        url = "http://0.0.0.0:3030/companies/"
+        headers = {"Content-Type": "application/json"}
+        response = requests.put(url, json=updated_data, headers=headers)
+
+        response.raise_for_status()
+
+        print("Data updated successfully")
+    except requests.exceptions.RequestException as e:
+        print(f"Error updating data: {e}")
 
 def process_data(data):
     # Example: Add a new column to the data
@@ -42,18 +53,26 @@ def main():
     if remote_data is not None:
         # Convert the data to a DataFrame for better formatting
         df = pd.DataFrame(remote_data)
+        st.data_editor(
+            df,
+            column_config={
+                "logo_url": st.column_config.ImageColumn(
+                    "logo_url", help="Streamlit app preview screenshots"
+                )
+            },
+            hide_index=True,
+        )
 
-        # Visualize the edited data in a styled DataFrame
-        st.write("Edited data from the remote server:")
-        st.dataframe(df.style.set_properties(**{'text-align': 'center'}).set_table_styles([{
-            'selector': 'th',
-            'props': [('text-align', 'center')]
-        }]))
+        # Add an update button to modify and update the data
+        if st.button("Update Data"):
+            # Modify the data as needed
+            updated_data = process_data(remote_data)
 
-        # Example: Display a line chart
-        # Note: This assumes 'sl.num:' is a key in your JSON data; adjust accordingly
-        if 'sl.num:' in df.columns:  # Checking for the existence of the column
-            st.line_chart(df['sl.num:'])
+            # Update the remote data
+            update_remote_data(updated_data)
+
+            # Display a success message
+            st.success("Data updated successfully!")
 
 if __name__ == "__main__":
     main()
